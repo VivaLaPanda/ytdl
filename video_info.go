@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	log "github.com/sirupsen/logrus"
 )
 
 const youtubeBaseURL = "https://www.youtube.com/watch"
@@ -151,14 +150,10 @@ func getVideoInfoFromHTML(id string, html []byte) (*VideoInfo, error) {
 	info.Title = strings.TrimSpace(doc.Find("#eow-title").Text())
 	info.ID = id
 	dateStr, ok := doc.Find("meta[itemprop=\"datePublished\"]").Attr("content")
-	if !ok {
-		log.Debug("Unable to extract date published")
-	} else {
+	if ok {
 		date, err := time.Parse(youtubeDateFormat, dateStr)
 		if err == nil {
 			info.DatePublished = date
-		} else {
-			log.Debug("Unable to parse date published", err.Error())
 		}
 	}
 
@@ -172,7 +167,6 @@ func getVideoInfoFromHTML(id string, html []byte) (*VideoInfo, error) {
 			return nil, err
 		}
 	} else {
-		log.Debug("Unable to extract json from default url, trying embedded url")
 		var resp *http.Response
 		resp, err = http.Get(youtubeEmbededBaseURL + id)
 		if err != nil {
@@ -235,18 +229,11 @@ func getVideoInfoFromHTML(id string, html []byte) (*VideoInfo, error) {
 	}
 	if a, ok := inf["author"].(string); ok {
 		info.Author = a
-	} else {
-		log.Debug("Unable to extract author")
 	}
-
 	if length, ok := inf["length_seconds"].(string); ok {
 		if duration, err := strconv.ParseInt(length, 10, 64); err == nil {
 			info.Duration = time.Second * time.Duration(duration)
-		} else {
-			log.Debug("Unable to parse duration string: ", length)
 		}
-	} else {
-		log.Debug("Unable to extract duration")
 	}
 
 	// For the future maybe
@@ -316,11 +303,7 @@ func getVideoInfoFromHTML(id string, html []byte) (*VideoInfo, error) {
 					}
 				}
 				formats = append(formats, format)
-			} else {
-				log.Debug("No metadata found for itag: ", itag, ", skipping...")
 			}
-		} else {
-			log.Debug("Unable to format string", err.Error())
 		}
 	}
 
@@ -390,8 +373,6 @@ func getDashManifest(urlString string) (formats []Format, err error) {
 					format.Resolution = ""
 				}
 				formats = append(formats, format)
-			} else {
-				log.Debug("No metadata found for itag: ", rep.Itag, ", skipping...")
 			}
 		}
 	}
